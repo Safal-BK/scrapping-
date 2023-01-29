@@ -1,0 +1,93 @@
+import grequests
+import time
+
+# start_time = time.time()
+# # Create a 10000 requests
+# urls =["https://data.epo.org/publication-server/rest/v1.2/patents/EP4115404NWA1/document.xml"]
+# rs = (grequests.get(u) for u in urls)
+
+# # Send them.
+# data=grequests.map(rs)
+# print(data[0].text)
+# print (time.time() - start_time) # Result was: 9.66666889191
+import urllib3
+import pandas as pd
+from bs4 import BeautifulSoup
+from time import sleep
+import os
+from datetime import datetime
+from tqdm import tqdm
+from time import sleep
+import requests
+import xml.etree.ElementTree as ET
+from requests.exceptions import HTTPError
+import sqlite3
+import pandas as pd
+
+
+con = sqlite3.connect("database/patent_list_db.sqlite")
+# Load the data into a DataFrame
+patentList_df = pd.read_sql_query("SELECT * from patent_list", con)
+con.close()
+
+
+names=[]
+urls=[]
+start=datetime.now()
+# download xml
+print("collecting url xml...")
+
+for idx,row in patentList_df.iterrows():
+    urls.append(row['xml_link'])
+    names.append(row['Patent_Number'])
+    if idx==20:
+        break
+patentList_df=''
+print(urls)
+
+# rs = (grequests.get(u) for u in urls)
+# # response = requests.get(link)
+# data=grequests.map(rs)
+
+# count=0
+# while (count<len(names)):
+#     with open('./xml/'+names[count]+'.xml', 'w') as file:
+#         file.write(data[count].text)
+#         # print(data[count].text)
+#     print("    ",(count)," / ",len(names)," completed...")
+#     count=count+1
+# print("completed...")
+# finish=datetime.now()
+# print(finish-start)
+
+
+
+
+
+
+
+# print("initialize downbloading xml...")
+# breakcount=100
+# batch =10
+# for i in range(5):
+#     rs = (grequests.get(u) for u in urls[:batch])
+#     # response = requests.get(link)
+#     print("request send....")
+#     data=grequests.map(rs)
+#     print("response receive....")
+#     sleep(1.0)
+#     count=0
+#     while (count<batch):
+#         with open('./xml/'+names[count]+'.xml', 'w') as file:
+#             file.write(data[count].text)
+#             # print(data[count].text)
+        
+#         count=count+1
+#     urls=urls[batch:]
+#     names=names[batch:]
+#     print(int(((i+1)/breakcount)*100)," completed")
+
+# print("downloading ....completed...")
+# finish=datetime.now()
+# print(finish-start)
+

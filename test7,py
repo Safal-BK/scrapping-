@@ -1,0 +1,82 @@
+import asyncio
+import aiohttp
+import time
+from aiolimiter import AsyncLimiter
+import urllib3
+import pandas as pd
+from bs4 import BeautifulSoup
+from time import sleep
+import os
+from datetime import datetime
+from tqdm import tqdm
+from time import sleep
+import requests
+import xml.etree.ElementTree as ET
+from requests.exceptions import HTTPError
+import sqlite3
+import pandas as pd
+
+
+con = sqlite3.connect("database/patent_list_db.sqlite")
+# Load the data into a DataFrame
+patentList_df = pd.read_sql_query("SELECT * from patent_list", con)
+con.close()
+
+
+names=[]
+urls=[]
+start=datetime.now()
+# download xml
+print("collecting url xml...")
+
+for idx,row in patentList_df.iterrows():
+    urls.append(row['xml_link'])
+    names.append(row['Patent_Number'])
+    if idx==100:
+        break
+patentList_df=''
+
+limiter = AsyncLimiter(1, 0.125)
+USER_AGENT = ''
+headers={'User-Agent':USER_AGENT}
+
+async def download_pep(url, semaphore) -> bytes:
+    async with aiohttp.ClientSession(headers=headers) as session:
+        await semaphore.acquire()
+        async with limiter:
+            print(f"Begin downloading {url} {(time.perf_counter() - s):0.4f} seconds")
+            async with session.get(url) as resp:
+                content = await resp.read()
+                print(f"Finished downloading {url}")
+                semaphore.release()
+                return content
+
+async def write_to_file(url, content: bytes) -> None:
+    filename = './xml/'+url.split('/')[::-1][1]+'.xml'
+    with open(filename, "w") as pep_file:
+        print(f"Begin writing to {filename} {(time.perf_counter() - s):0.4f} seconds")
+        pep_file.write(str(content))
+        print(f"Finished writing {filename} {(time.perf_counter() - s):0.4f} seconds")
+
+async def web_scrape_task(url, semaphore) -> None:
+    content = await download_pep(url, semaphore)
+    await write_to_file(url, content)
+
+async def main() -> None: 
+    tasks = []
+    semaphore = asyncio.Semaphore(value=10)
+
+
+
+    for i in range(len(urls)):
+        tasks.append(web_scrape_task(urls[i], semaphore))
+    await asyncio.wait(tasks)
+
+if __name__ == "__main__":
+    s = time.perf_counter()
+    asyncio.run(main()) # Activate this line if the code is to be executed in VS Code
+    # , etc. Otherwise deactivate it.
+    # await main()          # Activate this line if the code is to be executed in Jupyter 
+    # Notebook! Otherwise deactivate it.
+    elapsed = time.perf_counter() - s
+    print(f"Execution time: {elapsed:0.2f} seconds.")
